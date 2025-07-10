@@ -14,5 +14,14 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
 
+  bot:
+    build: .
+    container_name: company_ai_bot
+    restart: always
+    env_file:
+      - .env
+    depends_on:
+      - db
+
 volumes:
   pgdata:

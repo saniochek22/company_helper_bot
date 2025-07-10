@@ -1,8 +1,13 @@
 from openai import OpenAI
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+ai_token = os.getenv("OPENAI_API_KEY")
 
 client = OpenAI(
     base_url="https://openrouter.ai/api/v1",
-    api_key="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",
+    api_key=ai_token,
 )
 
 # Загружаем контекст компании один раз при запуске

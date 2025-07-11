@@ -1,4 +1,6 @@
-pyTelegramBotAPI
+pytelegrambotapi
 psycopg2-binary
-python-dotenv
 openai
+python-dotenv
+fastapi
+uvicorn

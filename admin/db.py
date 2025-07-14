@@ -18,22 +18,24 @@ def create_user(user: UserCreate):
     conn = get_connection()
     cur = conn.cursor()
     cur.execute("""
-        INSERT INTO users (telegram_id, role, department)
-        VALUES (%s, %s, %s)
+        INSERT INTO users (telegram_id, username, role, department)
+        VALUES (%s, %s, %s, %s)
         ON CONFLICT (telegram_id) DO NOTHING
-    """, (user.telegram_id, user.role, user.department))
+    """, (user.telegram_id, user.username, user.role, user.department))
     conn.commit()
     cur.close()
     conn.close()
 
+
 def get_user(telegram_id: int):
     conn = get_connection()
     cur = conn.cursor()
-    cur.execute("SELECT telegram_id, role, department FROM users WHERE telegram_id = %s", (telegram_id,))
+    cur.execute("SELECT telegram_id, username, role, department FROM users WHERE telegram_id = %s", (telegram_id,))
     row = cur.fetchone()
     cur.close()
     conn.close()
     return row
+
 
 def update_user(telegram_id: int, user: UserUpdate):
     conn = get_connection()
@@ -42,9 +44,12 @@ def update_user(telegram_id: int, user: UserUpdate):
         cur.execute("UPDATE users SET role = %s WHERE telegram_id = %s", (user.role, telegram_id))
     if user.department:
         cur.execute("UPDATE users SET department = %s WHERE telegram_id = %s", (user.department, telegram_id))
+    if user.username:
+        cur.execute("UPDATE users SET username = %s WHERE telegram_id = %s", (user.username, telegram_id))
     conn.commit()
     cur.close()
     conn.close()
+
 
 def delete_user(telegram_id: int):
     conn = get_connection()
@@ -57,8 +62,9 @@ def delete_user(telegram_id: int):
 def get_all_users():
     conn = get_connection()
     cur = conn.cursor()
-    cur.execute("SELECT telegram_id, role, department FROM users")
+    cur.execute("SELECT telegram_id, username, role, department FROM users")
     rows = cur.fetchall()
     cur.close()
     conn.close()
     return rows
+

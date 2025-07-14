@@ -1,7 +1,20 @@
 import psycopg2
 from dotenv import load_dotenv
 import os
+from cryptography.fernet import Fernet
 
+def create_bot_config_table():
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS bot_config (
+            id SERIAL PRIMARY KEY,
+            bot_token TEXT NOT NULL
+        )
+    """)
+    conn.commit()
+    cur.close()
+    conn.close()
 
 def create_table_if_not_exists():
     conn = get_connection()
@@ -29,6 +42,21 @@ def create_table_if_not_exists():
         END
         $$;
     """)
+
+    # В функции create_table_if_not_exists()
+    cur.execute("""
+        DO $$
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1 FROM information_schema.columns 
+                WHERE table_name = 'users' AND column_name = 'username'
+            ) THEN
+                ALTER TABLE users ADD COLUMN username TEXT;
+            END IF;
+        END
+        $$;
+    """)
+
 
     conn.commit()
     cur.close()
@@ -89,3 +117,37 @@ def get_user_department(telegram_id: int) -> str | None:
     conn.close()
     return result[0] if result else None
 
+
+def save_user_info(telegram_id: int, username: str):
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        INSERT INTO users (telegram_id, username)
+        VALUES (%s, %s)
+        ON CONFLICT (telegram_id)
+        DO UPDATE SET username = EXCLUDED.username
+    """, (telegram_id, username))
+    conn.commit()
+    cur.close()
+    conn.close()
+
+def user_exists(telegram_id: int) -> bool:
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT 1 FROM users WHERE telegram_id = %s", (telegram_id,))
+    exists = cur.fetchone() is not None
+    cur.close()
+    conn.close()
+    return exists
+
+def get_decrypted_bot_token():
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT bot_token FROM bot_config ORDER BY id DESC LIMIT 1")
+    row = cur.fetchone()
+    cur.close()
+    conn.close()
+    if not row:
+        raise Exception("Токен не найден в базе.")
+    fernet = Fernet(os.getenv("FERNET_SECRET_KEY").encode())
+    return fernet.decrypt(row[0].encode()).decode()

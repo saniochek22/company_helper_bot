@@ -68,3 +68,53 @@ def get_all_users():
     conn.close()
     return rows
 
+# Инициализация таблицы departments
+def init_db():
+    conn = get_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            telegram_id BIGINT PRIMARY KEY,
+            username TEXT,
+            role TEXT,
+            department TEXT
+        );
+    """)
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS departments (
+            id SERIAL PRIMARY KEY,
+            name TEXT UNIQUE NOT NULL
+        );
+    """)
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+
+# Добавить отдел
+def create_department(name: str):
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        INSERT INTO departments (name)
+        VALUES (%s)
+        ON CONFLICT (name) DO NOTHING
+    """, (name,))
+    conn.commit()
+    cur.close()
+    conn.close()
+
+
+# Получить все отделы
+def get_all_departments():
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT id, name FROM departments")
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+    return rows
+

@@ -4,6 +4,10 @@ from cryptography.fernet import Fernet
 import os
 from .models import BotTokenInput
 from .db import get_connection
+from .models import DepartmentCreate, DepartmentOut
+from .db import init_db
+
+init_db()
 
 
 
@@ -72,3 +76,14 @@ def set_bot_token(data: BotTokenInput):
     cur.close()
     conn.close()
     return {"message": "Encrypted bot token saved"}
+
+
+@app.post("/departments/", response_model=None)
+def add_department(dept: DepartmentCreate):
+    db.create_department(dept.name)
+    return {"message": "Department added"}
+
+@app.get("/departments/", response_model=list[DepartmentOut])
+def list_departments():
+    departments = db.get_all_departments()
+    return [{"id": d[0], "name": d[1]} for d in departments]

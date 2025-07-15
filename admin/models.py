@@ -19,3 +19,10 @@ class UserOut(UserBase):
 
 class BotTokenInput(BaseModel):
     token: str
+
+class DepartmentCreate(BaseModel):
+    name: str
+
+class DepartmentOut(BaseModel):
+    id: int
+    name: str

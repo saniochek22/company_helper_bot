@@ -5,3 +5,5 @@ python-dotenv
 fastapi
 uvicorn
 cryptography
+PyMuPDF
+python-multipart

@@ -85,7 +85,8 @@ def init_db():
     cur.execute("""
         CREATE TABLE IF NOT EXISTS departments (
             id SERIAL PRIMARY KEY,
-            name TEXT UNIQUE NOT NULL
+            name TEXT UNIQUE NOT NULL,
+            description_for_ai TEXT DEFAULT ''
         );
     """)
 
@@ -95,24 +96,45 @@ def init_db():
 
 
 # Добавить отдел
-def create_department(name: str):
+def create_department(name: str, description_for_ai: str | None = None):
     conn = get_connection()
     cur = conn.cursor()
     cur.execute("""
-        INSERT INTO departments (name)
-        VALUES (%s)
-        ON CONFLICT (name) DO NOTHING
-    """, (name,))
+        INSERT INTO departments (name, description_for_ai)
+        VALUES (%s, %s)
+        ON CONFLICT (name) DO UPDATE SET description_for_ai = COALESCE(EXCLUDED.description_for_ai, departments.description_for_ai)
+    """, (name, description_for_ai))
     conn.commit()
     cur.close()
     conn.close()
+
+def update_department(department_id: int, name: str, description_for_ai: str):
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        UPDATE departments
+        SET name = %s, description_for_ai = %s
+        WHERE id = %s
+    """, (name, description_for_ai, department_id))
+    conn.commit()
+    cur.close()
+    conn.close()
+
+def delete_department(department_id: int):
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM departments WHERE id = %s", (department_id,))
+    conn.commit()
+    cur.close()
+    conn.close()
+
 
 
 # Получить все отделы
 def get_all_departments():
     conn = get_connection()
     cur = conn.cursor()
-    cur.execute("SELECT id, name FROM departments")
+    cur.execute("SELECT id, name, description_for_ai FROM departments")
     rows = cur.fetchall()
     cur.close()
     conn.close()

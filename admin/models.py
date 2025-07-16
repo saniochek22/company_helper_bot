@@ -22,7 +22,9 @@ class BotTokenInput(BaseModel):
 
 class DepartmentCreate(BaseModel):
     name: str
+    description_for_ai: str | None = None
 
 class DepartmentOut(BaseModel):
     id: int
     name: str
+    description_for_ai: str | None = None

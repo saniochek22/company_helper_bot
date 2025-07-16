@@ -20,7 +20,6 @@ def create_table_if_not_exists():
     conn = get_connection()
     cur = conn.cursor()
 
-    # Создаём таблицу, если её нет
     cur.execute("""
         CREATE TABLE IF NOT EXISTS users (
             telegram_id BIGINT PRIMARY KEY,
@@ -29,7 +28,6 @@ def create_table_if_not_exists():
         )
     """)
 
-    # Добавляем колонку department, если она ещё не существует
     cur.execute("""
         DO $$
         BEGIN
@@ -43,7 +41,6 @@ def create_table_if_not_exists():
         $$;
     """)
 
-    # В функции create_table_if_not_exists()
     cur.execute("""
         DO $$
         BEGIN
@@ -151,3 +148,12 @@ def get_decrypted_bot_token():
         raise Exception("Токен не найден в базе.")
     fernet = Fernet(os.getenv("FERNET_SECRET_KEY").encode())
     return fernet.decrypt(row[0].encode()).decode()
+
+def get_department_description(department_name: str) -> str | None:
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT description_for_ai FROM departments WHERE name = %s", (department_name,))
+    row = cur.fetchone()
+    cur.close()
+    conn.close()
+    return row[0] if row else None

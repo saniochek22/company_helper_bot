@@ -1,6 +1,8 @@
 from openai import OpenAI
 from dotenv import load_dotenv
 import os
+from db import get_department_description
+
 
 load_dotenv()
 ai_token = os.getenv("OPENAI_API_KEY")
@@ -14,12 +16,17 @@ client = OpenAI(
 with open("company_context.txt", "r", encoding="utf-8") as f:
     COMPANY_CONTEXT = f.read()
 
-def ask_ai(role: str, department:str, question: str) -> str:
+def ask_ai(role: str, department: str, question: str) -> str:
+    department_description = get_department_description(department)
+    dept_info = f"Описание отдела: {department_description}" if department_description else ""
+
     system_prompt = f"""
 Ты — AI-помощник внутри компании. Отвечай профессионально, кратко и понятно, с опорой на внутренние документы и процессы.
 
 Контекст компании:
 {COMPANY_CONTEXT}
+
+{dept_info}
 
 Если информация в вопросе не соответствует корпоративной тематике, вежливо откажись отвечать.
 
@@ -39,3 +46,4 @@ def ask_ai(role: str, department:str, question: str) -> str:
     )
 
     return completion.choices[0].message.content
+

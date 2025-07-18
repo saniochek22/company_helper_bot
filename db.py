@@ -157,3 +157,46 @@ def get_department_description(department_name: str) -> str | None:
     cur.close()
     conn.close()
     return row[0] if row else None
+
+def save_message(telegram_id: int, role: str, department: str, content: str, message_type: str):
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        INSERT INTO user_message_history (
+            telegram_id, role, department, message_type, content
+        ) VALUES (%s, %s, %s, %s, %s)
+    """, (telegram_id, role, department, message_type, content))
+    conn.commit()
+    cur.close()
+    conn.close()
+    cleanup_old_messages(telegram_id)
+
+def get_recent_messages(telegram_id: int, limit: int = 10) -> list[dict]:
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT message_type, content FROM user_message_history
+        WHERE telegram_id = %s
+        ORDER BY created_at DESC
+        LIMIT %s
+    """, (telegram_id, limit))
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+    return [{"role": r[0], "content": r[1]} for r in reversed(rows)]
+
+def cleanup_old_messages(telegram_id: int, keep_last_n: int = 10):
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        DELETE FROM user_message_history
+        WHERE id IN (
+            SELECT id FROM user_message_history
+            WHERE telegram_id = %s
+            ORDER BY created_at DESC
+            OFFSET %s
+        )
+    """, (telegram_id, keep_last_n))
+    conn.commit()
+    cur.close()
+    conn.close()

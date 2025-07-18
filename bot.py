@@ -8,6 +8,7 @@ from db import (
     user_exists,
     get_decrypted_bot_token,
     create_bot_config_table,
+    save_message,
 )
 from ai import ask_ai
 from dotenv import load_dotenv
@@ -62,11 +63,18 @@ def handle_user_question(message):
     bot.send_chat_action(message.chat.id, 'typing')
 
     try:
-        answer = ask_ai(role, department, question)
+        # Сохраняем вопрос пользователя
+        save_message(user_id, role, department, question, "user")
+
+        answer = ask_ai(role, department, question, user_id)
+
+        # Сохраняем ответ AI
+        save_message(user_id, role, department, answer, "assistant")
+
         bot.reply_to(message, answer)
     except Exception as e:
         print(f"AI error: {e}")
-        bot.reply_to(message, "Произошла ошибка при обращении к AI.")
+        bot.reply_to(message, f"⚠️ Произошла ошибка при обращении к AI:\n{str(e)}")
 
 
 if __name__ == '__main__':

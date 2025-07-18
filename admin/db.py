@@ -90,6 +90,18 @@ def init_db():
         );
     """)
 
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS user_message_history (
+            id SERIAL PRIMARY KEY,
+            telegram_id BIGINT NOT NULL,
+            role TEXT,
+            department TEXT,
+            message_type TEXT CHECK (message_type IN ('user', 'assistant')),
+            content TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
     conn.commit()
     cur.close()
     conn.close()

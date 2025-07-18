@@ -158,6 +158,18 @@ def get_department_description(department_name: str) -> str | None:
     conn.close()
     return row[0] if row else None
 
+def get_department_model(department_name: str) -> str | None:
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT model FROM departments WHERE name = %s", (department_name,))
+    row = cur.fetchone()
+    cur.close()
+    conn.close()
+    if row and row[0]:
+        return row[0]
+    return None
+
+
 def save_message(telegram_id: int, role: str, department: str, content: str, message_type: str):
     conn = get_connection()
     cur = conn.cursor()

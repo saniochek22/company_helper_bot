@@ -86,7 +86,8 @@ def init_db():
         CREATE TABLE IF NOT EXISTS departments (
             id SERIAL PRIMARY KEY,
             name TEXT UNIQUE NOT NULL,
-            description_for_ai TEXT DEFAULT ''
+            description_for_ai TEXT DEFAULT '',
+            model TEXT DEFAULT ''
         );
     """)
 
@@ -151,4 +152,16 @@ def get_all_departments():
     cur.close()
     conn.close()
     return rows
+
+def update_department_model(department_name: str, model_name: str):
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        UPDATE departments
+        SET model = %s
+        WHERE name = %s
+    """, (model_name, department_name))
+    conn.commit()
+    cur.close()
+    conn.close()
 

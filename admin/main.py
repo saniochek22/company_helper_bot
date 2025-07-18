@@ -7,6 +7,7 @@ from .db import get_connection
 from .models import DepartmentCreate, DepartmentOut
 from .db import init_db
 from .pdf_handler import process_pdf_upload
+from agents.model_selector import run_model_selection_agent
 
 init_db()
 
@@ -81,6 +82,8 @@ def set_bot_token(data: BotTokenInput):
 @app.post("/departments/", response_model=None)
 def add_department(dept: DepartmentCreate):
     db.create_department(dept.name, dept.description_for_ai)
+    # 🧠 запуск агента для выбора модели
+    run_model_selection_agent(dept.name, dept.description_for_ai)
     return {"message": "Department added"}
 
 @app.patch("/departments/{department_id}")

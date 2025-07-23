@@ -71,7 +71,12 @@ def handle_user_question(message):
         # Сохраняем ответ AI
         save_message(user_id, role, department, answer, "assistant")
 
-        bot.reply_to(message, answer)
+        bot.send_message(
+            message.chat.id,
+            answer,
+            parse_mode="Markdown"
+        )
+
     except Exception as e:
         print(f"AI error: {e}")
         bot.reply_to(message, f"⚠️ Произошла ошибка при обращении к AI:\n{str(e)}")

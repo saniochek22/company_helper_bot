@@ -86,6 +86,13 @@ def add_department(dept: DepartmentCreate):
     run_model_selection_agent(dept.name, dept.description_for_ai)
     return {"message": "Department added"}
 
+@app.get("/departments/{department_id}", response_model=DepartmentOut)
+def get_department(department_id: int):
+    department = db.get_department(department_id)
+    if not department:
+        raise HTTPException(status_code=404, detail="Department not found")
+    return {"id": department[0], "name": department[1], "description_for_ai": department[2]}
+
 @app.patch("/departments/{department_id}")
 def update_department(department_id: int, dept: DepartmentCreate):
     db.update_department(department_id, dept.name, dept.description_for_ai)

@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Админ-панель бота</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/@mdi/font@7.2.96/css/materialdesignicons.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container-fluid">
+    <div class="row">
+      <!-- Сайдбар -->
+      <nav id="sidebar" class="col-md-3 col-lg-2 d-md-block bg-dark sidebar collapse">
+        <div class="position-sticky pt-3">
+          <ul class="nav flex-column">
+            <li class="nav-item">
+              <a class="nav-link active" href="#" data-section="users">
+                <i class="mdi mdi-account-group me-2"></i>Пользователи
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#" data-section="departments">
+                <i class="mdi mdi-office-building me-2"></i>Отделы
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#" data-section="settings">
+                <i class="mdi mdi-cog me-2"></i>Настройки
+              </a>
+            </li>
+          </ul>
+        </div>
+      </nav>
+
+      <!-- Основной контент -->
+      <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+        <!-- Пользователи -->
+        <div id="users-section" class="section-content">
+          <h2 class="mt-4">Управление пользователями</h2>
+          <button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#userModal">
+            <i class="mdi mdi-plus"></i> Добавить пользователя
+          </button>
+          <div class="table-responsive">
+            <table class="table table-striped table-hover">
+              <thead>
+                <tr>
+                  <th>Telegram ID</th>
+                  <th>Имя</th>
+                  <th>Роль</th>
+                  <th>Отдел</th>
+                  <th>Действия</th>
+                </tr>
+              </thead>
+              <tbody id="users-table">
+                <!-- Данные будут здесь -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Отделы -->
+        <div id="departments-section" class="section-content d-none">
+          <h2 class="mt-4">Управление отделами</h2>
+          <button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#departmentModal">
+            <i class="mdi mdi-plus"></i> Добавить отдел
+          </button>
+          <div class="table-responsive">
+            <table class="table table-striped table-hover">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Название</th>
+                  <th>Описание для ИИ</th>
+                  <th>Действия</th>
+                </tr>
+              </thead>
+              <tbody id="departments-table">
+                <!-- Данные будут здесь -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Настройки -->
+        <div id="settings-section" class="section-content d-none">
+          <h2 class="mt-4">Настройки бота</h2>
+          <div class="card">
+            <div class="card-body">
+              <form id="token-form">
+                <div class="mb-3">
+                  <label for="bot-token" class="form-label">Токен бота</label>
+                  <div class="input-group">
+                    <input type="password" class="form-control" id="bot-token" required>
+                    <button class="btn btn-outline-secondary" type="button" id="toggle-token">
+                      <i class="mdi mdi-eye"></i>
+                    </button>
+                  </div>
+                </div>
+                <button type="submit" class="btn btn-primary">Сохранить</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Модальные окна -->
+  <!-- Для пользователей -->
+  <div class="modal fade" id="userModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="userModalTitle">Добавить пользователя</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="user-form">
+            <input type="hidden" id="user-id">
+            <div class="mb-3">
+              <label for="telegram-id" class="form-label">Telegram ID</label>
+              <input type="number" class="form-control" id="telegram-id" required>
+            </div>
+            <div class="mb-3">
+              <label for="username" class="form-label">Имя пользователя</label>
+              <input type="text" class="form-control" id="username" required>
+            </div>
+            <div class="mb-3">
+              <label for="role" class="form-label">Роль</label>
+              <select class="form-select" id="role" required>
+                <option value="admin">Админ</option>
+                <option value="manager">Менеджер</option>
+                <option value="user">Пользователь</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label for="department" class="form-label">Отдел</label>
+              <select class="form-select" id="department" required>
+                <!-- Заполнится динамически -->
+              </select>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+          <button type="button" class="btn btn-primary" id="save-user">Сохранить</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Для отделов -->
+  <div class="modal fade" id="departmentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="departmentModalTitle">Добавить отдел</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="department-form">
+            <input type="hidden" id="department-id">
+            <div class="mb-3">
+              <label for="department-name" class="form-label">Название</label>
+              <input type="text" class="form-control" id="department-name" required>
+            </div>
+            <div class="mb-3">
+              <label for="department-description" class="form-label">Описание для ИИ</label>
+              <textarea class="form-control" id="department-description" rows="3"></textarea>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+          <button type="button" class="btn btn-primary" id="save-department">Сохранить</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Для загрузки PDF -->
+  <div class="modal fade" id="pdfModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Загрузить PDF описание</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="pdf-form">
+            <input type="hidden" id="current-department-id">
+            <div class="mb-3">
+              <label for="pdf-file" class="form-label">PDF файл</label>
+              <input type="file" class="form-control" id="pdf-file" accept=".pdf" required>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+          <button type="button" class="btn btn-primary" id="upload-pdf">Загрузить</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Уведомления -->
+  <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+    <div id="toast" class="toast align-items-center text-white bg-success" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="d-flex">
+        <div class="toast-body" id="toast-message">Успешно!</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

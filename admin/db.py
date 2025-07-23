@@ -141,7 +141,14 @@ def delete_department(department_id: int):
     cur.close()
     conn.close()
 
-
+def get_department(id: int):
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT id, name, description_for_ai FROM departments WHERE id = %s", (id,))
+    row = cur.fetchone()
+    cur.close()
+    conn.close()
+    return row
 
 # Получить все отделы
 def get_all_departments():

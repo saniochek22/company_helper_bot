@@ -14,8 +14,11 @@ class UserUpdate(BaseModel):
     department: str | None = None
     username: str | None = None  
 
-class UserOut(UserBase):
-    pass
+class UserOut(BaseModel):
+    telegram_id: int
+    username: str
+    role: str | None = None
+    department: str | None = None
 
 class BotTokenInput(BaseModel):
     token: str

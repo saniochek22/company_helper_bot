@@ -40,7 +40,6 @@ document.addEventListener('DOMContentLoaded', function() {
       // Загрузить данные при необходимости
       if (section === 'users') {
         loadUsers();
-        loadDepartmentsForSelect();
       } else if (section === 'departments') {
         loadDepartments();
       }
@@ -73,7 +72,7 @@ document.addEventListener('DOMContentLoaded', function() {
       })
       .catch(error => {
         showToast('Ошибка при сохранении токена', 'danger');
-        console.error(error);
+        console.error('Ошибка токена:', error.response?.data || error.message);
       });
   });
   
@@ -86,11 +85,15 @@ document.addEventListener('DOMContentLoaded', function() {
   // Загрузка PDF
   document.getElementById('upload-pdf').addEventListener('click', uploadPdf);
   
+  // Загружаем отделы при открытии модалки пользователя
+  document.getElementById('userModal').addEventListener('show.bs.modal', loadDepartmentsForSelect);
+  
   // По умолчанию загружаем пользователей
   document.querySelector('[data-section="users"]').click();
 });
 
-// Функции для работы с пользователями
+// ==================== Функции для работы с пользователями ====================
+
 function loadUsers() {
   axiosInstance.get('/users/')
     .then(response => {
@@ -101,9 +104,9 @@ function loadUsers() {
         const row = document.createElement('tr');
         row.innerHTML = `
           <td>${user.telegram_id}</td>
-          <td>${user.username}</td>
-          <td>${user.role}</td>
-          <td>${user.department}</td>
+          <td>${user.username || '-'}</td>
+          <td>${user.role || '-'}</td>
+          <td>${user.department || '-'}</td>
           <td>
             <i class="mdi mdi-pencil action-btn text-primary" data-id="${user.telegram_id}"></i>
             <i class="mdi mdi-delete action-btn text-danger" data-id="${user.telegram_id}"></i>
@@ -123,7 +126,7 @@ function loadUsers() {
     })
     .catch(error => {
       showToast('Ошибка при загрузке пользователей', 'danger');
-      console.error(error);
+      console.error('Ошибка загрузки пользователей:', error.response?.data || error.message);
     });
 }
 
@@ -137,16 +140,22 @@ function editUser() {
       document.getElementById('userModalTitle').textContent = 'Редактировать пользователя';
       document.getElementById('user-id').value = user.telegram_id;
       document.getElementById('telegram-id').value = user.telegram_id;
-      document.getElementById('username').value = user.username;
-      document.getElementById('role').value = user.role;
-      document.getElementById('department').value = user.department;
+      document.getElementById('username').value = user.username || '';
+      document.getElementById('role').value = user.role || '';
+      
+      // Установим значение отдела после загрузки списка
+      const departmentSelect = document.getElementById('department');
+      if (user.department && departmentSelect) {
+        const option = Array.from(departmentSelect.options).find(opt => opt.value === user.department);
+        if (option) option.selected = true;
+      }
       
       const modal = new bootstrap.Modal(document.getElementById('userModal'));
       modal.show();
     })
     .catch(error => {
       showToast('Ошибка при загрузке данных пользователя', 'danger');
-      console.error(error);
+      console.error('Ошибка загрузки пользователя:', error.response?.data || error.message);
     });
 }
 
@@ -157,6 +166,11 @@ function saveUser() {
     role: document.getElementById('role').value,
     department: document.getElementById('department').value
   };
+  
+  if (!userData.username || !userData.role || !userData.department) {
+    showToast('Заполните все обязательные поля', 'warning');
+    return;
+  }
   
   const promise = currentUserId 
     ? axiosInstance.patch(`/users/${currentUserId}`, userData)
@@ -171,7 +185,7 @@ function saveUser() {
     })
     .catch(error => {
       showToast('Ошибка при сохранении пользователя', 'danger');
-      console.error(error);
+      console.error('Ошибка сохранения пользователя:', error.response?.data || error.message);
     });
 }
 
@@ -187,11 +201,12 @@ function deleteUser() {
     })
     .catch(error => {
       showToast('Ошибка при удалении пользователя', 'danger');
-      console.error(error);
+      console.error('Ошибка удаления пользователя:', error.response?.data || error.message);
     });
 }
 
-// Функции для работы с отделами
+// ==================== Функции для работы с отделами ====================
+
 function loadDepartments() {
   axiosInstance.get('/departments/')
     .then(response => {
@@ -228,7 +243,26 @@ function loadDepartments() {
     })
     .catch(error => {
       showToast('Ошибка при загрузке отделов', 'danger');
-      console.error(error);
+      console.error('Ошибка загрузки отделов:', error.response?.data || error.message);
+    });
+}
+
+function loadDepartmentsForSelect() {
+  return axiosInstance.get('/departments/')
+    .then(response => {
+      const select = document.getElementById('department');
+      if (!select) return;
+      
+      select.innerHTML = '<option value="">Выберите отдел</option>';
+      response.data.forEach(dept => {
+        const option = document.createElement('option');
+        option.value = dept.name;
+        option.textContent = dept.name;
+        select.appendChild(option);
+      });
+    })
+    .catch(error => {
+      console.error('Ошибка загрузки отделов для выбора:', error.response?.data || error.message);
     });
 }
 
@@ -239,9 +273,10 @@ function editDepartment() {
   axiosInstance.get(`/departments/${departmentId}`)
     .then(response => {
       const dept = response.data;
-      document.getElementById('departmentModalTitle').textContent = 'Редактировать отдел';
+      document.getElementById('departmentModalTitle').textContent = 
+        currentDepartmentId ? 'Редактировать отдел' : 'Добавить отдел';
       document.getElementById('department-id').value = dept.id;
-      document.getElementById('department-name').value = dept.name;
+      document.getElementById('department-name').value = dept.name || '';
       document.getElementById('department-description').value = dept.description_for_ai || '';
       
       const modal = new bootstrap.Modal(document.getElementById('departmentModal'));
@@ -249,7 +284,7 @@ function editDepartment() {
     })
     .catch(error => {
       showToast('Ошибка при загрузке данных отдела', 'danger');
-      console.error(error);
+      console.error('Ошибка загрузки отдела:', error.response?.data || error.message);
     });
 }
 
@@ -258,12 +293,18 @@ function saveDepartment() {
     name: document.getElementById('department-name').value,
     description_for_ai: document.getElementById('department-description').value || null
   };
-  
-  const promise = currentDepartmentId 
-    ? axiosInstance.patch(`/departments/${currentDepartmentId}`, deptData)
-    : axiosInstance.post('/departments/', deptData);
-  
-  promise
+
+  if (!deptData.name) {
+    showToast('Название отдела обязательно', 'warning');
+    return;
+  }
+
+  const method = currentDepartmentId ? 'patch' : 'post';
+  const url = currentDepartmentId 
+    ? `/departments/${currentDepartmentId}`
+    : '/departments/';
+
+  axiosInstance[method](url, deptData)
     .then(() => {
       showToast('Отдел сохранён', 'success');
       loadDepartments();
@@ -272,7 +313,7 @@ function saveDepartment() {
     })
     .catch(error => {
       showToast('Ошибка при сохранении отдела', 'danger');
-      console.error(error);
+      console.error('Ошибка сохранения отдела:', error.response?.data || error.message);
     });
 }
 
@@ -288,9 +329,11 @@ function deleteDepartment() {
     })
     .catch(error => {
       showToast('Ошибка при удалении отдела', 'danger');
-      console.error(error);
+      console.error('Ошибка удаления отдела:', error.response?.data || error.message);
     });
 }
+
+// ==================== Функции для работы с PDF ====================
 
 function preparePdfUpload() {
   currentDepartmentId = this.getAttribute('data-id');
@@ -322,28 +365,11 @@ function uploadPdf() {
   })
   .catch(error => {
     showToast('Ошибка при загрузке PDF', 'danger');
-    console.error(error);
+    console.error('Ошибка загрузки PDF:', error.response?.data || error.message);
   });
 }
 
-// Вспомогательные функции
-function loadDepartmentsForSelect() {
-  axiosInstance.get('/departments/')
-    .then(response => {
-      const select = document.getElementById('department');
-      select.innerHTML = '';
-      
-      response.data.forEach(dept => {
-        const option = document.createElement('option');
-        option.value = dept.name;
-        option.textContent = dept.name;
-        select.appendChild(option);
-      });
-    })
-    .catch(error => {
-      console.error('Ошибка при загрузке отделов для выбора:', error);
-    });
-}
+// ==================== Вспомогательные функции ====================
 
 function showToast(message, type = 'success') {
   const toastEl = document.getElementById('toast');
@@ -365,4 +391,12 @@ document.getElementById('userModal').addEventListener('hidden.bs.modal', functio
 document.getElementById('departmentModal').addEventListener('hidden.bs.modal', function() {
   document.getElementById('department-form').reset();
   currentDepartmentId = null;
+});
+
+// Инициализация новой модалки отдела
+document.getElementById('departmentModal').addEventListener('show.bs.modal', function() {
+  if (!currentDepartmentId) {
+    document.getElementById('departmentModalTitle').textContent = 'Добавить отдел';
+    document.getElementById('department-id').value = '';
+  }
 });

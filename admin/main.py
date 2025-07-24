@@ -8,6 +8,7 @@ from .models import DepartmentCreate, DepartmentOut
 from .db import init_db
 from .pdf_handler import process_pdf_upload
 from agents.model_selector import run_model_selection_agent
+from fastapi import BackgroundTasks
 
 init_db()
 
@@ -80,10 +81,9 @@ def set_bot_token(data: BotTokenInput):
 
 
 @app.post("/departments/", response_model=None)
-def add_department(dept: DepartmentCreate):
+def add_department(dept: DepartmentCreate, background_tasks: BackgroundTasks):
     db.create_department(dept.name, dept.description_for_ai)
-    # 🧠 запуск агента для выбора модели
-    run_model_selection_agent(dept.name, dept.description_for_ai)
+    background_tasks.add_task(run_model_selection_agent, dept.name, dept.description_for_ai)
     return {"message": "Department added"}
 
 @app.get("/departments/{department_id}", response_model=DepartmentOut)

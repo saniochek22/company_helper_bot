@@ -57,7 +57,7 @@ def run_model_selection_agent(department_name: str, description: str):
     ]
 
     response = client.chat.completions.create(
-        model="deepseek/deepseek-chat-v3-0324:free",  # начальная модель для reasoning
+        model="moonshotai/kimi-k2:free",  # начальная модель для reasoning
         messages=messages,
         tools=tools,
         tool_choice="auto"

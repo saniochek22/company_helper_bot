@@ -7,6 +7,17 @@ const axiosInstance = axios.create({
   }
 });
 
+axiosInstance.interceptors.response.use(
+  response => response, // просто возвращаем ответ, если всё ок
+  error => {
+    if (error.response && error.response.status === 403) {
+      // При 403 — редиректим на страницу логина
+      window.location.href = '/login'; // или укажи реальный путь к форме входа
+    }
+    return Promise.reject(error);
+  }
+);
+
 // Глобальные переменные
 let currentUserId = null;
 let currentDepartmentId = null;

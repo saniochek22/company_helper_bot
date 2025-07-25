@@ -212,3 +212,16 @@ def cleanup_old_messages(telegram_id: int, keep_last_n: int = 10):
     conn.commit()
     cur.close()
     conn.close()
+
+def get_department_assistant_id(department_name: str) -> str | None:
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT assistant_id FROM departments WHERE name = %s",
+        (department_name,)
+    )
+    result = cur.fetchone()
+    cur.close()
+    conn.close()
+    return result[0] if result else None
+

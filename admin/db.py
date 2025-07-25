@@ -87,7 +87,8 @@ def init_db():
             id SERIAL PRIMARY KEY,
             name TEXT UNIQUE NOT NULL,
             description_for_ai TEXT DEFAULT '',
-            model TEXT DEFAULT ''
+            model TEXT DEFAULT '',
+            assistant_id TEXT DEFAULT '' 
         );
     """)
 
@@ -106,6 +107,7 @@ def init_db():
     conn.commit()
     cur.close()
     conn.close()
+
 
 
 # Добавить отдел
@@ -171,4 +173,27 @@ def update_department_model(department_name: str, model_name: str):
     conn.commit()
     cur.close()
     conn.close()
+
+def update_department_assistant_id(department_name: str, assistant_id: str):
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "UPDATE departments SET assistant_id = %s WHERE name = %s",
+        (assistant_id, department_name)
+    )
+    conn.commit()
+    cur.close()
+    conn.close()
+
+def get_department_assistant_id(department_name: str) -> str | None:
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT assistant_id FROM departments WHERE name = %s",
+        (department_name,)
+    )
+    result = cur.fetchone()
+    cur.close()
+    conn.close()
+    return result[0] if result else None
 

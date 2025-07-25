@@ -17,6 +17,9 @@ document.addEventListener('DOMContentLoaded', function() {
   const toastEl = document.getElementById('toast');
   const toast = new bootstrap.Toast(toastEl);
   
+  // Загрузить сохранённый токен бота при загрузке страницы
+  loadBotToken();
+  
   // Переключение между разделами
   document.querySelectorAll('[data-section]').forEach(link => {
     link.addEventListener('click', function(e) {
@@ -42,6 +45,8 @@ document.addEventListener('DOMContentLoaded', function() {
         loadUsers();
       } else if (section === 'departments') {
         loadDepartments();
+      } else if (section === 'settings') {
+        loadBotToken(); // При переходе в настройки тоже загружаем токен
       }
     });
   });
@@ -64,11 +69,18 @@ document.addEventListener('DOMContentLoaded', function() {
   // Сохранить токен бота
   document.getElementById('token-form').addEventListener('submit', function(e) {
     e.preventDefault();
-    const token = document.getElementById('bot-token').value;
+    const token = document.getElementById('bot-token').value.trim();
+    
+    if (!token) {
+      showToast('Введите токен бота', 'warning');
+      return;
+    }
     
     axiosInstance.post('/config/bot-token', { token })
       .then(() => {
         showToast('Токен успешно сохранён', 'success');
+        // Сохраняем токен в localStorage
+        localStorage.setItem('botToken', token);
       })
       .catch(error => {
         showToast('Ошибка при сохранении токена', 'danger');
@@ -88,9 +100,52 @@ document.addEventListener('DOMContentLoaded', function() {
   // Загружаем отделы при открытии модалки пользователя
   document.getElementById('userModal').addEventListener('show.bs.modal', loadDepartmentsForSelect);
   
+  // Очистка формы при закрытии модального окна пользователя
+  document.getElementById('userModal').addEventListener('hidden.bs.modal', function() {
+    document.getElementById('user-form').reset();
+    currentUserId = null;
+  });
+  
+  // Очистка формы при закрытии модального окна отдела
+  document.getElementById('departmentModal').addEventListener('hidden.bs.modal', function() {
+    document.getElementById('department-form').reset();
+    currentDepartmentId = null;
+  });
+  
+  // Инициализация новой модалки отдела
+  document.getElementById('departmentModal').addEventListener('show.bs.modal', function() {
+    if (!currentDepartmentId) {
+      document.getElementById('departmentModalTitle').textContent = 'Добавить отдел';
+      document.getElementById('department-id').value = '';
+    }
+  });
+  
   // По умолчанию загружаем пользователей
   document.querySelector('[data-section="users"]').click();
 });
+
+// ==================== Функции для работы с токеном бота ====================
+
+function loadBotToken() {
+  // Сначала проверяем localStorage
+  const savedToken = localStorage.getItem('botToken');
+  if (savedToken) {
+    document.getElementById('bot-token').value = savedToken;
+  }
+  
+  // Затем загружаем с сервера (если нужно)
+  axiosInstance.get('/config/bot-token')
+    .then(response => {
+      if (response.data && response.data.token) {
+        document.getElementById('bot-token').value = response.data.token;
+        // Обновляем localStorage
+        localStorage.setItem('botToken', response.data.token);
+      }
+    })
+    .catch(error => {
+      console.error('Ошибка загрузки токена:', error.response?.data || error.message);
+    });
+}
 
 // ==================== Функции для работы с пользователями ====================
 
@@ -146,7 +201,7 @@ function editUser() {
       // Установим значение отдела после загрузки списка
       const departmentSelect = document.getElementById('department');
       if (user.department && departmentSelect) {
-        const option = Array.from(departmentSelect.options).find(opt => opt.value === user.department);
+        const option = Array.from(departmentSelect.options).find(opt => opt.text === user.department);
         if (option) option.selected = true;
       }
       
@@ -162,8 +217,8 @@ function editUser() {
 function saveUser() {
   const userData = {
     telegram_id: parseInt(document.getElementById('telegram-id').value),
-    username: document.getElementById('username').value,
-    role: document.getElementById('role').value,
+    username: document.getElementById('username').value.trim(),
+    role: document.getElementById('role').value.trim(),
     department: document.getElementById('department').value
   };
   
@@ -273,8 +328,7 @@ function editDepartment() {
   axiosInstance.get(`/departments/${departmentId}`)
     .then(response => {
       const dept = response.data;
-      document.getElementById('departmentModalTitle').textContent = 
-        currentDepartmentId ? 'Редактировать отдел' : 'Добавить отдел';
+      document.getElementById('departmentModalTitle').textContent = 'Редактировать отдел';
       document.getElementById('department-id').value = dept.id;
       document.getElementById('department-name').value = dept.name || '';
       document.getElementById('department-description').value = dept.description_for_ai || '';
@@ -290,8 +344,8 @@ function editDepartment() {
 
 function saveDepartment() {
   const deptData = {
-    name: document.getElementById('department-name').value,
-    description_for_ai: document.getElementById('department-description').value || null
+    name: document.getElementById('department-name').value.trim(),
+    description_for_ai: document.getElementById('department-description').value.trim() || null
   };
 
   if (!deptData.name) {
@@ -381,22 +435,3 @@ function showToast(message, type = 'success') {
   const toast = new bootstrap.Toast(toastEl);
   toast.show();
 }
-
-// Очистка формы при закрытии модального окна
-document.getElementById('userModal').addEventListener('hidden.bs.modal', function() {
-  document.getElementById('user-form').reset();
-  currentUserId = null;
-});
-
-document.getElementById('departmentModal').addEventListener('hidden.bs.modal', function() {
-  document.getElementById('department-form').reset();
-  currentDepartmentId = null;
-});
-
-// Инициализация новой модалки отдела
-document.getElementById('departmentModal').addEventListener('show.bs.modal', function() {
-  if (!currentDepartmentId) {
-    document.getElementById('departmentModalTitle').textContent = 'Добавить отдел';
-    document.getElementById('department-id').value = '';
-  }
-});

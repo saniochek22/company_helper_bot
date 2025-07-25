@@ -1,69 +1,47 @@
-from openai import OpenAI  
+from openai import OpenAI
 from dotenv import load_dotenv
 import os
-from admin.db import update_department_model
+from admin.db import update_department_model, update_department_assistant_id
 
 load_dotenv()
-ai_token = os.getenv("OPENAI_API_KEY")
 
-client = OpenAI(
-    base_url="https://openrouter.ai/api/v1",
-    api_key=ai_token,
-)
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-tools = [
-    {
-        "type": "function",
-        "function": {
-            "name": "save_model_for_department",
-            "description": "Сохраняет модель, выбранную для отдела",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "department_name": {"type": "string"},
-                    "model_name": {"type": "string"},
-                },
-                "required": ["department_name", "model_name"]
-            }
-        }
-    }
-]
+# Маппинг модели по типу отдела
+MODEL_RECOMMENDATIONS = {
+    "разработка": "gpt-3.5-turbo" ,
+    "аналитика": "gpt-3.5-turbo" ,
+    "тестирование": "gpt-3.5-turbo" ,
+    "hr": "gpt-3.5-turbo" ,
+    "маркетинг": "gpt-3.5-turbo" ,
+}
 
-# agents/model_selector.py
+def select_model(description: str) -> str:
+    desc = description.lower()
+    for key, model in MODEL_RECOMMENDATIONS.items():
+        if key in desc:
+            return model
+    return "gpt-3.5-turbo" 
 
-def save_model_for_department(department_name: str, model_name: str):
-    update_department_model(department_name, model_name)
-    return f"✅ Модель '{model_name}' сохранена для отдела '{department_name}'"
-
+def create_assistant_for_department(name: str, description: str, model_name: str):
+    assistant = client.beta.assistants.create(
+        name=f"Агент отдела {name}",
+        instructions=(
+            f"Ты — персональный AI-помощник для отдела '{name}'. "
+            f"Описание отдела: {description}. "
+            f"Отвечай кратко, профессионально, по делу."
+        ),
+        tools=[],
+        model=model_name
+    )
+    return assistant.id
 
 def run_model_selection_agent(department_name: str, description: str):
-    system_prompt = (
-        "Ты — помощник, который выбирает лучшую LLM-модель для отдела компании "
-        "и сохраняет её вызовом функции. "
-        "Выбор осуществляем с учётом необходимости мощности модели для задач отдела, например для"
-        "разработки и приближенного лучше использовать наиболее мощные(deepseek), для аналитики тестировки и тд - средние(qwen, gemma)"
-        "ну и для hr, маргетинга и тд - самые простые модельки.(mistral)"
-        "У тебя есть следующие доступные модели: "
-        "- deepseek/deepseek-chat-v3-0324:free\n"
-        "- qwen/qwq-32b:free\n"
-        "- mistralai/mistral-nemo:free\n"
-        "- google/gemma-3-27b-it:free\n"
-        "Выбери подходящую модель в зависимости от описания отдела."
-    )
+    model_name = select_model(description)
+    assistant_id = create_assistant_for_department(department_name, description, model_name)
 
-    messages = [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": f"Описание отдела: {description}\nНазвание: {department_name}"},
-    ]
+    # Сохраняем и модель, и ассистента
+    update_department_model(department_name, model_name)
+    update_department_assistant_id(department_name, assistant_id)
 
-    response = client.chat.completions.create(
-        model="moonshotai/kimi-k2:free",  # начальная модель для reasoning
-        messages=messages,
-        tools=tools,
-        tool_choice="auto"
-    )
-
-    tool_call = response.choices[0].message.tool_calls[0]
-    if tool_call.function.name == "save_model_for_department":
-        args = eval(tool_call.function.arguments)
-        return save_model_for_department(**args)
+    return f"✅ Для отдела '{department_name}' выбрана модель: {model_name}, создан агент {assistant_id}"
